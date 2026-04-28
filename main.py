@@ -20,3 +20,5 @@ if __name__ == "__main__":
     print()
     print(greet("Developer"))
     print(f"2 + 3 = {add(2, 3)}")
+
+def 123

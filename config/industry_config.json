@@ -1,0 +1,54 @@
+{
+  "industries": [
+    {
+      "id": "semiconductor",
+      "name": "반도체 제조",
+      "qty_scale": 0.1,
+      "amt_scale": 10.0,
+      "unit_price_range": [500000, 5000000],
+      "item_name_pattern": ["Wafer-200mm", "DRAM-8G", "NAND-256G", "SoC-AP", "PMIC"],
+      "seasonality": "Q_END_HEAVY",
+      "description": "소량 고단가, 분기말 집중 납품 패턴"
+    },
+    {
+      "id": "automotive",
+      "name": "자동차 부품",
+      "qty_scale": 0.5,
+      "amt_scale": 3.0,
+      "unit_price_range": [50000, 500000],
+      "item_name_pattern": ["Engine-Block", "Gear-Set", "Brake-Pad", "ECU", "Sensor-ABS"],
+      "seasonality": "H1_HEAVY",
+      "description": "중량 중단가, 상반기 집중 패턴"
+    },
+    {
+      "id": "food",
+      "name": "식품/음료",
+      "qty_scale": 3.0,
+      "amt_scale": 0.3,
+      "unit_price_range": [1000, 50000],
+      "item_name_pattern": ["음료-탄산500ml", "과자-스낵100g", "음료-주스1L", "유제품-우유1L", "냉동식품-500g"],
+      "seasonality": "SUMMER_HEAVY",
+      "description": "대량 저단가, 여름 성수기 패턴"
+    },
+    {
+      "id": "chemical",
+      "name": "화학/소재",
+      "qty_scale": 0.3,
+      "amt_scale": 5.0,
+      "unit_price_range": [100000, 2000000],
+      "item_name_pattern": ["수지-PP", "수지-ABS", "용제-MEK", "안료-WHITE", "첨가제-UV"],
+      "seasonality": "FLAT",
+      "description": "중소량 고단가, 균등 납품 패턴"
+    },
+    {
+      "id": "logistics",
+      "name": "물류/유통",
+      "qty_scale": 5.0,
+      "amt_scale": 0.2,
+      "unit_price_range": [5000, 100000],
+      "item_name_pattern": ["박스-소형", "팔레트-표준", "포장재-에어캡", "테이프-OPP", "라벨-바코드"],
+      "seasonality": "YEAR_END_HEAVY",
+      "description": "대량 저단가, 연말 집중 패턴"
+    }
+  ]
+}
