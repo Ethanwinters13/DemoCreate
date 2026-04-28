@@ -1,48 +1,29 @@
 """
-MSSQL 데이터베이스 연결 및 쿼리 처리 모듈
+SQLite 데이터베이스 연결 및 쿼리 처리 모듈 (로컬 개발용)
 """
-import os
+import sqlite3
 import pandas as pd
-import pyodbc
-from dotenv import load_dotenv
 import streamlit as st
+from pathlib import Path
 
-# .env 파일 로드
-load_dotenv()
+DB_PATH = Path(__file__).parent.parent / "demo_configurator.db"
 
 def get_connection():
     """
-    MSSQL 데이터베이스 연결 반환
+    SQLite 데이터베이스 연결 반환
 
     Returns:
-        pyodbc.Connection: 데이터베이스 연결 객체
+        sqlite3.Connection: 데이터베이스 연결 객체
 
     Raises:
         Exception: 연결 실패 시 예외 발생
     """
     try:
-        host = os.getenv('DB_HOST')
-        port = os.getenv('DB_PORT')
-        database = os.getenv('DB_NAME')
-        user = os.getenv('DB_USER')
-        password = os.getenv('DB_PASS')
-        driver = os.getenv('DB_DRIVER', 'ODBC Driver 17 for SQL Server')
-
-        conn_str = (
-            f"DRIVER={{{driver}}};"
-            f"SERVER={host},{port};"
-            f"DATABASE={database};"
-            f"UID={user};"
-            f"PWD={password};"
-        )
-
-        conn = pyodbc.connect(conn_str)
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.row_factory = sqlite3.Row
         return conn
-
-    except pyodbc.Error as e:
-        raise Exception(f"데이터베이스 연결 실패: {str(e)}")
     except Exception as e:
-        raise Exception(f"환경 설정 오류: {str(e)}")
+        raise Exception(f"데이터베이스 연결 실패: {str(e)}")
 
 
 def execute_query(sql, params=None):
@@ -66,48 +47,35 @@ def execute_query(sql, params=None):
         return df
 
     except Exception as e:
-        st.error(f"쿼리 실행 오류: {str(e)}")
+        print(f"쿼리 실행 오류: {str(e)}")
         return pd.DataFrame()
 
 
-def execute_insert(df, table_name, batch_size=1000):
+def execute_insert(df, table_name, batch_size=1000, if_exists='replace'):
     """
-    pandas DataFrame을 MSSQL 테이블에 bulk insert
+    pandas DataFrame을 SQLite 테이블에 저장
 
     Args:
         df (pd.DataFrame): 삽입할 데이터프레임
         table_name (str): 대상 테이블명
         batch_size (int): 배치 사이즈 (기본값: 1000)
+        if_exists (str): 테이블 존재 시 동작 ('replace', 'append', 'fail')
 
     Returns:
         bool: 성공 여부
     """
     try:
         conn = get_connection()
-        cursor = conn.cursor()
-
-        # 컬럼명 가져오기
-        columns = df.columns.tolist()
-        placeholders = ','.join(['?' for _ in columns])
-        col_str = ','.join(columns)
-
-        insert_sql = f"INSERT INTO {table_name} ({col_str}) VALUES ({placeholders})"
-
-        # 배치 단위로 insert
         total_rows = len(df)
-        for i in range(0, total_rows, batch_size):
-            batch_df = df.iloc[i:i+batch_size]
-            rows = [tuple(row) for row in batch_df.values]
-            cursor.executemany(insert_sql, rows)
 
-        conn.commit()
+        df.to_sql(table_name, conn, if_exists=if_exists, index=False)
+
         conn.close()
-
-        st.success(f"✅ {total_rows:,}행이 {table_name}에 삽입되었습니다.")
+        print(f"[OK] {total_rows:,}행이 {table_name}에 저장되었습니다.")
         return True
 
     except Exception as e:
-        st.error(f"Insert 오류: {str(e)}")
+        print(f"Insert 오류: {str(e)}")
         return False
 
 
@@ -122,19 +90,12 @@ def check_table_exists(table_name):
         bool: 테이블 존재 여부
     """
     try:
-        sql = f"""
-            SELECT CASE
-                WHEN EXISTS(
-                    SELECT 1 FROM INFORMATION_SCHEMA.TABLES
-                    WHERE TABLE_NAME = ?
-                ) THEN 1 ELSE 0
-            END as result
-        """
+        sql = f"SELECT name FROM sqlite_master WHERE type='table' AND name=?"
         result = execute_query(sql, (table_name,))
-        return bool(result['result'].iloc[0]) if len(result) > 0 else False
+        return len(result) > 0
 
     except Exception as e:
-        st.error(f"테이블 확인 오류: {str(e)}")
+        print(f"테이블 확인 오류: {str(e)}")
         return False
 
 
@@ -154,7 +115,7 @@ def get_row_count(table_name):
         return int(result['count'].iloc[0]) if len(result) > 0 else 0
 
     except Exception as e:
-        st.error(f"행 수 조회 오류: {str(e)}")
+        print(f"행 수 조회 오류: {str(e)}")
         return 0
 
 
@@ -172,5 +133,5 @@ def test_connection():
         conn.close()
         return True
     except Exception as e:
-        st.error(f"연결 테스트 실패: {str(e)}")
+        print(f"연결 테스트 실패: {str(e)}")
         return False
