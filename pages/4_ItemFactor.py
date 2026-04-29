@@ -2,6 +2,7 @@
 Streamlit Page 4: 품목별 인자 조회 및 변환
 """
 import streamlit as st
+import pandas as pd
 from modules.factor_handler import load_item_factors, transform_item_factors, compare_factors, preview_factors
 from modules.converter import get_industry_list
 from pathlib import Path
@@ -11,7 +12,7 @@ st.set_page_config(page_title="품목별 인자", page_icon="📦", layout="wide
 
 st.title("📦 품목별 인자 (SALES_FACTOR)")
 
-CSV_PATH = Path(__file__).parent.parent / "data" / "TB_BF_ITEM_FACTOR.csv"
+CSV_PATH = Path(__file__).parent.parent / "data" / "TB_BF_SALES_FACTOR_202604291639.csv"
 
 @st.cache_data
 def load_data():
@@ -27,9 +28,9 @@ try:
     with col1:
         st.metric("총 행 수", f"{len(df):,}")
     with col2:
-        st.metric("거래처 수", f"{df['ACCOUNT_ID'].nunique()}")
+        st.metric("거래처 수", f"{df['ACCOUNT_CD'].nunique()}")
     with col3:
-        st.metric("품목 수", f"{df['ITEM_MST_ID'].nunique()}")
+        st.metric("품목 수", f"{df['ITEM_CD'].nunique()}")
     with col4:
         date_range = (df['BASE_DATE'].max() - df['BASE_DATE'].min()).days
         st.metric("기간 (일)", f"{date_range}")
@@ -55,62 +56,66 @@ try:
     with col2:
         accounts = st.multiselect(
             "거래처 선택",
-            options=sorted(df['ACCOUNT_ID'].unique()),
+            options=sorted(df['ACCOUNT_CD'].unique()),
             default=None,
             key="accounts_filter_item_factor"
         )
         if accounts:
-            df_filtered = df_filtered[df_filtered['ACCOUNT_ID'].isin(accounts)]
+            df_filtered = df_filtered[df_filtered['ACCOUNT_CD'].isin(accounts)]
 
     with col3:
         items = st.multiselect(
             "품목 선택",
-            options=sorted(df['ITEM_MST_ID'].unique()),
+            options=sorted(df['ITEM_CD'].unique()),
             default=None,
             key="items_filter_item_factor"
         )
         if items:
-            df_filtered = df_filtered[df_filtered['ITEM_MST_ID'].isin(items)]
+            df_filtered = df_filtered[df_filtered['ITEM_CD'].isin(items)]
 
     st.write(f"필터링된 데이터: {len(df_filtered):,}행 / {len(df):,}행")
 
     # 필터링된 데이터 미리보기
     st.subheader("3️⃣ 인자 데이터 조회")
-    st.dataframe(preview_factors(df_filtered, n=50), use_container_width=True)
+
+    # SALES_FACTOR 컬럼 찾기
+    factor_cols = [col for col in df.columns if col.startswith('SALES_FACTOR')]
+    display_cols = ['BASE_DATE', 'ITEM_CD', 'ACCOUNT_CD'] + factor_cols[:10]  # 상위 10개 FACTOR만 표시
+
+    st.dataframe(preview_factors(df_filtered[display_cols], n=50), use_container_width=True)
 
     # 인자 통계
     st.subheader("4️⃣ 인자값 통계")
 
-    col1, col2, col3 = st.columns(3)
+    if 'SALES_FACTOR1' in df_filtered.columns:
+        col1, col2, col3 = st.columns(3)
 
-    factor_cols = ['SALES_FACTOR01', 'SALES_FACTOR02', 'SALES_FACTOR03']
+        with col1:
+            st.write("**SALES_FACTOR1**")
+            st.write(f"""
+            - 평균: {df_filtered['SALES_FACTOR1'].mean():.3f}
+            - 최소: {df_filtered['SALES_FACTOR1'].min():.3f}
+            - 최대: {df_filtered['SALES_FACTOR1'].max():.3f}
+            - 표준편차: {df_filtered['SALES_FACTOR1'].std():.3f}
+            """)
 
-    with col1:
-        st.write("**할인율 (SALES_FACTOR01)**")
-        st.write(f"""
-        - 평균: {df_filtered['SALES_FACTOR01'].mean():.3f}
-        - 최소: {df_filtered['SALES_FACTOR01'].min():.3f}
-        - 최대: {df_filtered['SALES_FACTOR01'].max():.3f}
-        - 표준편차: {df_filtered['SALES_FACTOR01'].std():.3f}
-        """)
+        with col2:
+            st.write("**SALES_FACTOR2**")
+            st.write(f"""
+            - 평균: {df_filtered['SALES_FACTOR2'].mean():.3f}
+            - 최소: {df_filtered['SALES_FACTOR2'].min():.3f}
+            - 최대: {df_filtered['SALES_FACTOR2'].max():.3f}
+            - 표준편차: {df_filtered['SALES_FACTOR2'].std():.3f}
+            """)
 
-    with col2:
-        st.write("**프로모션 여부 (SALES_FACTOR02)**")
-        st.write(f"""
-        - 평균: {df_filtered['SALES_FACTOR02'].mean():.3f}
-        - 최소: {df_filtered['SALES_FACTOR02'].min():.3f}
-        - 최대: {df_filtered['SALES_FACTOR02'].max():.3f}
-        - 표준편차: {df_filtered['SALES_FACTOR02'].std():.3f}
-        """)
-
-    with col3:
-        st.write("**경쟁사 가격 (SALES_FACTOR03)**")
-        st.write(f"""
-        - 평균: {df_filtered['SALES_FACTOR03'].mean():.3f}
-        - 최소: {df_filtered['SALES_FACTOR03'].min():.3f}
-        - 최대: {df_filtered['SALES_FACTOR03'].max():.3f}
-        - 표준편차: {df_filtered['SALES_FACTOR03'].std():.3f}
-        """)
+        with col3:
+            st.write("**SALES_FACTOR3**")
+            st.write(f"""
+            - 평균: {df_filtered['SALES_FACTOR3'].mean():.3f}
+            - 최소: {df_filtered['SALES_FACTOR3'].min():.3f}
+            - 최대: {df_filtered['SALES_FACTOR3'].max():.3f}
+            - 표준편차: {df_filtered['SALES_FACTOR3'].std():.3f}
+            """)
 
     # 변환 설정
     st.subheader("5️⃣ 인자 변환 설정")
@@ -129,33 +134,33 @@ try:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        factor01_scale = st.slider(
-            "할인율 스케일",
+        factor1_scale = st.slider(
+            "SALES_FACTOR1 스케일",
             min_value=0.5,
             max_value=2.0,
             value=1.0,
             step=0.1,
-            help="할인율에 적용할 스케일 배율"
+            help="FACTOR1에 적용할 스케일 배율"
         )
 
     with col2:
-        factor02_scale = st.slider(
-            "프로모션 스케일",
+        factor2_scale = st.slider(
+            "SALES_FACTOR2 스케일",
             min_value=0.0,
             max_value=1.0,
             value=0.5,
             step=0.1,
-            help="프로모션 적용 확률 (0~1)"
+            help="FACTOR2 적용 확률"
         )
 
     with col3:
-        factor03_scale = st.slider(
-            "경쟁사 가격 스케일",
+        factor3_scale = st.slider(
+            "SALES_FACTOR3 스케일",
             min_value=0.5,
             max_value=2.0,
             value=1.0,
             step=0.1,
-            help="경쟁사 가격에 적용할 스케일 배율"
+            help="FACTOR3에 적용할 스케일 배율"
         )
 
     # 변환 버튼
@@ -165,9 +170,9 @@ try:
         with st.spinner("인자 변환 중..."):
             try:
                 options = {
-                    'custom_sales_factor01_scale': factor01_scale,
-                    'custom_sales_factor02_scale': factor02_scale,
-                    'custom_sales_factor03_scale': factor03_scale,
+                    'custom_sales_factor01_scale': factor1_scale,
+                    'custom_sales_factor02_scale': factor2_scale,
+                    'custom_sales_factor03_scale': factor3_scale,
                 }
 
                 df_converted = transform_item_factors(df_filtered, selected_industry_id, options)
@@ -198,23 +203,23 @@ try:
             st.write("**원본 인자 통계**")
             st.write(f"""
             - 행 수: {orig['rows']:,}
-            - 할인율 평균: {orig['factor_means'].get('SALES_FACTOR01', 0):.3f}
-            - 프로모션 평균: {orig['factor_means'].get('SALES_FACTOR02', 0):.3f}
-            - 경쟁사가격 평균: {orig['factor_means'].get('SALES_FACTOR03', 0):.3f}
+            - SALES_FACTOR1 평균: {orig['factor_means'].get('SALES_FACTOR1', 0):.3f}
+            - SALES_FACTOR2 평균: {orig['factor_means'].get('SALES_FACTOR2', 0):.3f}
+            - SALES_FACTOR3 평균: {orig['factor_means'].get('SALES_FACTOR3', 0):.3f}
             """)
 
         with col2:
             st.write("**변환된 인자 통계**")
             st.write(f"""
             - 행 수: {conv['rows']:,}
-            - 할인율 평균: {conv['factor_means'].get('SALES_FACTOR01', 0):.3f}
-            - 프로모션 평균: {conv['factor_means'].get('SALES_FACTOR02', 0):.3f}
-            - 경쟁사가격 평균: {conv['factor_means'].get('SALES_FACTOR03', 0):.3f}
+            - SALES_FACTOR1 평균: {conv['factor_means'].get('SALES_FACTOR1', 0):.3f}
+            - SALES_FACTOR2 평균: {conv['factor_means'].get('SALES_FACTOR2', 0):.3f}
+            - SALES_FACTOR3 평균: {conv['factor_means'].get('SALES_FACTOR3', 0):.3f}
             """)
 
         # 변환 결과 미리보기
         st.subheader("8️⃣ 변환 결과 미리보기")
-        st.dataframe(preview_factors(df_converted, n=20), use_container_width=True)
+        st.dataframe(preview_factors(df_converted[display_cols], n=20), use_container_width=True)
 
         # 다운로드
         st.subheader("9️⃣ 데이터 다운로드")

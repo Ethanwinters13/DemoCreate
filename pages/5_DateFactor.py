@@ -2,6 +2,7 @@
 Streamlit Page 5: 일자별 인자 조회 및 변환
 """
 import streamlit as st
+import pandas as pd
 from modules.factor_handler import load_date_factors, transform_date_factors, compare_factors, preview_factors
 from modules.converter import get_industry_list
 from pathlib import Path
@@ -11,7 +12,7 @@ st.set_page_config(page_title="일자별 인자", page_icon="📅", layout="wide
 
 st.title("📅 일자별 인자 (FACTOR)")
 
-CSV_PATH = Path(__file__).parent.parent / "data" / "TB_BF_DATE_FACTOR.csv"
+CSV_PATH = Path(__file__).parent.parent / "data" / "TB_BF_DATE_FACTOR_202604291639.csv"
 
 @st.cache_data
 def load_data():
@@ -30,7 +31,8 @@ try:
         date_range = (df['BASE_DATE'].max() - df['BASE_DATE'].min()).days
         st.metric("기간 (일)", f"{date_range}")
     with col3:
-        st.metric("FACTOR 개수", "5개")
+        factor_cols = [col for col in df.columns if col.startswith('FACTOR')]
+        st.metric("FACTOR 개수", f"{len(factor_cols)}")
 
     # 필터
     st.subheader("2️⃣ 필터")
@@ -52,7 +54,12 @@ try:
 
     # 필터링된 데이터 미리보기
     st.subheader("3️⃣ 인자 데이터 조회")
-    st.dataframe(preview_factors(df_filtered, n=50), use_container_width=True)
+
+    # FACTOR 컬럼 찾기
+    factor_cols = [col for col in df.columns if col.startswith('FACTOR')]
+    display_cols = ['BASE_DATE'] + factor_cols[:10]  # 상위 10개 FACTOR만 표시
+
+    st.dataframe(preview_factors(df_filtered[display_cols], n=50), use_container_width=True)
 
     # 인자 통계
     st.subheader("4️⃣ 인자값 통계")
@@ -60,51 +67,56 @@ try:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.write("**날씨지수 (FACTOR01)**")
-        st.write(f"""
-        - 평균: {df_filtered['FACTOR01'].mean():.2f}
-        - 최소: {df_filtered['FACTOR01'].min():.2f}
-        - 최대: {df_filtered['FACTOR01'].max():.2f}
-        - 표준편차: {df_filtered['FACTOR01'].std():.2f}
-        """)
+        if 'FACTOR1' in df_filtered.columns:
+            st.write("**FACTOR1**")
+            st.write(f"""
+            - 평균: {df_filtered['FACTOR1'].mean():.2f}
+            - 최소: {df_filtered['FACTOR1'].min():.2f}
+            - 최대: {df_filtered['FACTOR1'].max():.2f}
+            - 표준편차: {df_filtered['FACTOR1'].std():.2f}
+            """)
 
     with col2:
-        st.write("**강수량 (FACTOR02)**")
-        st.write(f"""
-        - 평균: {df_filtered['FACTOR02'].mean():.2f}
-        - 최소: {df_filtered['FACTOR02'].min():.2f}
-        - 최대: {df_filtered['FACTOR02'].max():.2f}
-        - 표준편차: {df_filtered['FACTOR02'].std():.2f}
-        """)
+        if 'FACTOR2' in df_filtered.columns:
+            st.write("**FACTOR2**")
+            st.write(f"""
+            - 평균: {df_filtered['FACTOR2'].mean():.2f}
+            - 최소: {df_filtered['FACTOR2'].min():.2f}
+            - 최대: {df_filtered['FACTOR2'].max():.2f}
+            - 표준편차: {df_filtered['FACTOR2'].std():.2f}
+            """)
 
     with col3:
-        st.write("**금리 (FACTOR03)**")
-        st.write(f"""
-        - 평균: {df_filtered['FACTOR03'].mean():.2f}
-        - 최소: {df_filtered['FACTOR03'].min():.2f}
-        - 최대: {df_filtered['FACTOR03'].max():.2f}
-        - 표준편차: {df_filtered['FACTOR03'].std():.2f}
-        """)
+        if 'FACTOR3' in df_filtered.columns:
+            st.write("**FACTOR3**")
+            st.write(f"""
+            - 평균: {df_filtered['FACTOR3'].mean():.2f}
+            - 최소: {df_filtered['FACTOR3'].min():.2f}
+            - 최대: {df_filtered['FACTOR3'].max():.2f}
+            - 표준편차: {df_filtered['FACTOR3'].std():.2f}
+            """)
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.write("**소비심리 (FACTOR04)**")
-        st.write(f"""
-        - 평균: {df_filtered['FACTOR04'].mean():.2f}
-        - 최소: {df_filtered['FACTOR04'].min():.2f}
-        - 최대: {df_filtered['FACTOR04'].max():.2f}
-        - 표준편차: {df_filtered['FACTOR04'].std():.2f}
-        """)
+        if 'FACTOR4' in df_filtered.columns:
+            st.write("**FACTOR4**")
+            st.write(f"""
+            - 평균: {df_filtered['FACTOR4'].mean():.2f}
+            - 최소: {df_filtered['FACTOR4'].min():.2f}
+            - 최대: {df_filtered['FACTOR4'].max():.2f}
+            - 표준편차: {df_filtered['FACTOR4'].std():.2f}
+            """)
 
     with col2:
-        st.write("**환율 (FACTOR05)**")
-        st.write(f"""
-        - 평균: {df_filtered['FACTOR05'].mean():.2f}
-        - 최소: {df_filtered['FACTOR05'].min():.2f}
-        - 최대: {df_filtered['FACTOR05'].max():.2f}
-        - 표준편차: {df_filtered['FACTOR05'].std():.2f}
-        """)
+        if 'FACTOR5' in df_filtered.columns:
+            st.write("**FACTOR5**")
+            st.write(f"""
+            - 평균: {df_filtered['FACTOR5'].mean():.2f}
+            - 최소: {df_filtered['FACTOR5'].min():.2f}
+            - 최대: {df_filtered['FACTOR5'].max():.2f}
+            - 표준편차: {df_filtered['FACTOR5'].std():.2f}
+            """)
 
     # 변환 설정
     st.subheader("5️⃣ 인자 변환 설정")
@@ -125,15 +137,15 @@ try:
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
-        apply_factor01 = st.checkbox("FACTOR01 (날씨지수)", value=True)
+        apply_factor01 = st.checkbox("FACTOR1", value=True, key="f1")
     with col2:
-        apply_factor02 = st.checkbox("FACTOR02 (강수량)", value=True)
+        apply_factor02 = st.checkbox("FACTOR2", value=True, key="f2")
     with col3:
-        apply_factor03 = st.checkbox("FACTOR03 (금리)", value=True)
+        apply_factor03 = st.checkbox("FACTOR3", value=True, key="f3")
     with col4:
-        apply_factor04 = st.checkbox("FACTOR04 (소비심리)", value=True)
+        apply_factor04 = st.checkbox("FACTOR4", value=True, key="f4")
     with col5:
-        apply_factor05 = st.checkbox("FACTOR05 (환율)", value=True)
+        apply_factor05 = st.checkbox("FACTOR5", value=True, key="f5")
 
     # 스케일 설정
     st.write("**FACTOR 스케일 설정:**")
@@ -141,52 +153,52 @@ try:
 
     with col1:
         scale_factor01 = st.slider(
-            "FACTOR01 스케일",
+            "FACTOR1 스케일",
             min_value=0.5,
             max_value=2.0,
             value=1.0,
             step=0.1,
-            help="날씨지수에 적용할 스케일"
+            key="s1"
         )
 
     with col2:
         scale_factor02 = st.slider(
-            "FACTOR02 스케일",
+            "FACTOR2 스케일",
             min_value=0.5,
             max_value=2.0,
             value=1.0,
             step=0.1,
-            help="강수량에 적용할 스케일"
+            key="s2"
         )
 
     with col3:
         scale_factor03 = st.slider(
-            "FACTOR03 스케일",
+            "FACTOR3 스케일",
             min_value=0.5,
             max_value=2.0,
             value=1.0,
             step=0.1,
-            help="금리에 적용할 스케일"
+            key="s3"
         )
 
     with col4:
         scale_factor04 = st.slider(
-            "FACTOR04 스케일",
+            "FACTOR4 스케일",
             min_value=0.5,
             max_value=2.0,
             value=1.0,
             step=0.1,
-            help="소비심리에 적용할 스케일"
+            key="s4"
         )
 
     with col5:
         scale_factor05 = st.slider(
-            "FACTOR05 스케일",
+            "FACTOR5 스케일",
             min_value=0.5,
             max_value=2.0,
             value=1.0,
             step=0.1,
-            help="환율에 적용할 스케일"
+            key="s5"
         )
 
     # 변환 버튼
@@ -197,18 +209,18 @@ try:
             try:
                 options = {
                     'apply_factors': {
-                        'FACTOR01': apply_factor01,
-                        'FACTOR02': apply_factor02,
-                        'FACTOR03': apply_factor03,
-                        'FACTOR04': apply_factor04,
-                        'FACTOR05': apply_factor05,
+                        'FACTOR1': apply_factor01,
+                        'FACTOR2': apply_factor02,
+                        'FACTOR3': apply_factor03,
+                        'FACTOR4': apply_factor04,
+                        'FACTOR5': apply_factor05,
                     },
                     'custom_scales': {
-                        'FACTOR01': scale_factor01,
-                        'FACTOR02': scale_factor02,
-                        'FACTOR03': scale_factor03,
-                        'FACTOR04': scale_factor04,
-                        'FACTOR05': scale_factor05,
+                        'FACTOR1': scale_factor01,
+                        'FACTOR2': scale_factor02,
+                        'FACTOR3': scale_factor03,
+                        'FACTOR4': scale_factor04,
+                        'FACTOR5': scale_factor05,
                     }
                 }
 
@@ -240,23 +252,23 @@ try:
             st.write("**원본 인자 통계**")
             st.write(f"""
             - 행 수: {orig['rows']:,}
-            - FACTOR01 평균: {orig['factor_means'].get('FACTOR01', 0):.2f}
-            - FACTOR02 평균: {orig['factor_means'].get('FACTOR02', 0):.2f}
-            - FACTOR03 평균: {orig['factor_means'].get('FACTOR03', 0):.2f}
+            - FACTOR1 평균: {orig['factor_means'].get('FACTOR1', 0):.2f}
+            - FACTOR2 평균: {orig['factor_means'].get('FACTOR2', 0):.2f}
+            - FACTOR3 평균: {orig['factor_means'].get('FACTOR3', 0):.2f}
             """)
 
         with col2:
             st.write("**변환된 인자 통계**")
             st.write(f"""
             - 행 수: {conv['rows']:,}
-            - FACTOR01 평균: {conv['factor_means'].get('FACTOR01', 0):.2f}
-            - FACTOR02 평균: {conv['factor_means'].get('FACTOR02', 0):.2f}
-            - FACTOR03 평균: {conv['factor_means'].get('FACTOR03', 0):.2f}
+            - FACTOR1 평균: {conv['factor_means'].get('FACTOR1', 0):.2f}
+            - FACTOR2 평균: {conv['factor_means'].get('FACTOR2', 0):.2f}
+            - FACTOR3 평균: {conv['factor_means'].get('FACTOR3', 0):.2f}
             """)
 
         # 변환 결과 미리보기
         st.subheader("8️⃣ 변환 결과 미리보기")
-        st.dataframe(preview_factors(df_converted, n=20), use_container_width=True)
+        st.dataframe(preview_factors(df_converted[display_cols], n=20), use_container_width=True)
 
         # 다운로드
         st.subheader("9️⃣ 데이터 다운로드")

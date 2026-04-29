@@ -2,6 +2,7 @@
 Streamlit Page 1: 원본 데이터 EDA
 """
 import streamlit as st
+import pandas as pd
 from modules.data_loader import load_csv, get_table_summary
 from modules.eda import (
     get_summary_stats,
@@ -19,12 +20,54 @@ st.set_page_config(page_title="데이터 분석", page_icon="📊", layout="wide
 
 st.title("📊 원본 데이터 분석 (EDA)")
 
-CSV_PATH = Path(__file__).parent.parent / "data" / "TB_CM_ACTUAL_SALES_202604281652.csv"
+ACTUAL_SALES_PATH = Path(__file__).parent.parent / "data" / "TB_CM_ACTUAL_SALES_202604281652.csv"
+ITEM_MST_PATH = Path(__file__).parent.parent / "data" / "TB_CM_ITEM_MST_202604291637.csv"
+ACCOUNT_MST_PATH = Path(__file__).parent.parent / "data" / "TB_DP_ACCOUNT_MST_202604291638.csv"
+COMN_CODE_PATH = Path(__file__).parent.parent / "data" / "TB_AD_COMN_CODE_202604291638.csv"
 
 # CSV 로드
 @st.cache_data
 def load_data():
-    return load_csv(CSV_PATH)
+    # 원본 데이터 로드
+    df_sales = load_csv(ACTUAL_SALES_PATH)
+
+    # 마스터 데이터 로드 및 JOIN
+    try:
+        df_item = pd.read_csv(ITEM_MST_PATH, encoding='utf-8-sig')
+        df_sales = df_sales.merge(
+            df_item[['ID', 'ITEM_NM', 'ITEM_CD']],
+            left_on='ITEM_MST_ID',
+            right_on='ID',
+            how='left'
+        ).drop('ID', axis=1)
+    except Exception as e:
+        st.warning(f"품목 마스터 로드 실패: {str(e)}")
+
+    try:
+        df_account = pd.read_csv(ACCOUNT_MST_PATH, encoding='utf-8-sig')
+        df_sales = df_sales.merge(
+            df_account[['ID', 'ACCOUNT_NM', 'ACCOUNT_CD']],
+            left_on='ACCOUNT_ID',
+            right_on='ID',
+            how='left',
+            suffixes=('', '_account')
+        ).drop('ID', axis=1)
+    except Exception as e:
+        st.warning(f"거래처 마스터 로드 실패: {str(e)}")
+
+    try:
+        df_comn = pd.read_csv(COMN_CODE_PATH, encoding='utf-8-sig')
+        df_comn_status = df_comn[df_comn['SRC_ID'] == 'SO_STATUS']
+        df_sales = df_sales.merge(
+            df_comn_status[['ID', 'COMN_CD_NM']],
+            left_on='SO_STATUS_ID',
+            right_on='ID',
+            how='left'
+        ).drop('ID', axis=1).rename(columns={'COMN_CD_NM': 'SO_STATUS_NM'})
+    except Exception as e:
+        st.warning(f"공통코드 로드 실패: {str(e)}")
+
+    return df_sales
 
 try:
     df = load_data()

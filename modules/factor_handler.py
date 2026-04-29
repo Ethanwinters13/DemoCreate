@@ -46,14 +46,14 @@ def load_item_factors(filepath):
 
 def transform_date_factors(df, industry_id, options=None):
     """
-    일자별 인자 변환
+    일자별 인자 변환 (FACTOR1~50)
 
     Args:
         df (pd.DataFrame): 원본 인자 데이터
         industry_id (str): 업종 ID
         options (dict): 변환 옵션
-          - apply_factors: FACTOR 적용 여부 dict (default: 모두 True)
-          - custom_scales: 커스텀 스케일 dict (default: None, 설정값 사용)
+          - apply_factors: FACTOR 적용 여부 dict
+          - custom_scales: 커스텀 스케일 dict
 
     Returns:
         pd.DataFrame: 변환된 인자 데이터
@@ -74,39 +74,37 @@ def transform_date_factors(df, industry_id, options=None):
 
         df_transformed = df.copy()
 
-        # FACTOR 컬럼 찾기 (FACTOR01~50)
-        factor_columns = [col for col in df.columns if col.startswith('FACTOR')]
+        # FACTOR 컬럼 찾기 (FACTOR1~50)
+        factor_columns = [col for col in df.columns if col.startswith('FACTOR') and col[6:].replace('_', '').isdigit()]
+        factor_columns = sorted(factor_columns, key=lambda x: int(x.replace('FACTOR', '')))
 
         st.progress(10, text="1/5: 인자 데이터 복사 중...")
 
-        # 적용할 FACTOR 결정 (default: 모두 적용)
+        # 적용할 FACTOR 결정
         apply_factors = options.get('apply_factors', {col: True for col in factor_columns})
 
-        # 커스텀 스케일 (default: 모두 1.0)
+        # 커스텀 스케일
         custom_scales = options.get('custom_scales', {col: 1.0 for col in factor_columns})
 
         st.progress(30, text="2/5: 인자 스케일 적용 중...")
 
         for col in factor_columns:
-            if apply_factors.get(col, True):
+            if col in df_transformed.columns and apply_factors.get(col, True):
                 scale = custom_scales.get(col, 1.0)
-                df_transformed[col] = df[col] * scale
+                if pd.api.types.is_numeric_dtype(df_transformed[col]):
+                    df_transformed[col] = df_transformed[col] * scale
 
         st.progress(60, text="3/5: 인자값 정규화 중...")
 
-        # 인자값 정규화 (값의 범위를 업종별로 조정)
+        # 인자값 정규화 (노이즈 추가)
         for col in factor_columns:
-            if apply_factors.get(col, True):
-                # 예: 금리는 2.5~4.5 범위 유지
-                min_val = df_transformed[col].min()
-                max_val = df_transformed[col].max()
-                # 노이즈 추가 (±5%)
-                noise = np.random.uniform(0.95, 1.05, len(df_transformed))
-                df_transformed[col] = df_transformed[col] * noise
+            if col in df_transformed.columns and apply_factors.get(col, True):
+                if pd.api.types.is_numeric_dtype(df_transformed[col]):
+                    noise = np.random.uniform(0.95, 1.05, len(df_transformed))
+                    df_transformed[col] = df_transformed[col] * noise
 
         st.progress(90, text="4/5: 최종 정리 중...")
 
-        # NULL 컬럼 유지
         df_transformed = df_transformed[df.columns]
 
         st.progress(100, text="변환 완료!")
@@ -120,15 +118,15 @@ def transform_date_factors(df, industry_id, options=None):
 
 def transform_item_factors(df, industry_id, options=None):
     """
-    품목별 인자 변환
+    품목별 인자 변환 (SALES_FACTOR1~50)
 
     Args:
         df (pd.DataFrame): 원본 인자 데이터
         industry_id (str): 업종 ID
         options (dict): 변환 옵션
-          - custom_sales_factor01_scale: 할인율 스케일 (default: 1.0)
-          - custom_sales_factor02_scale: 프로모션 스케일 (default: 1.0)
-          - custom_sales_factor03_scale: 경쟁사가격 스케일 (default: 1.0)
+          - custom_sales_factor01_scale: SALES_FACTOR1 스케일
+          - custom_sales_factor02_scale: SALES_FACTOR2 스케일
+          - custom_sales_factor03_scale: SALES_FACTOR3 스케일
 
     Returns:
         pd.DataFrame: 변환된 인자 데이터
@@ -148,50 +146,47 @@ def transform_item_factors(df, industry_id, options=None):
             raise ValueError(f"지원하지 않는 업종: {industry_id}")
 
         df_transformed = df.copy()
-        total_rows = len(df_transformed)
 
         st.progress(10, text="1/5: 인자 데이터 복사 중...")
 
         # 스케일 값 설정
-        factor01_scale = options.get('custom_sales_factor01_scale', 1.0)  # 할인율
-        factor02_scale = options.get('custom_sales_factor02_scale', 1.0)  # 프로모션
-        factor03_scale = options.get('custom_sales_factor03_scale', 1.0)  # 경쟁사 가격
+        factor1_scale = options.get('custom_sales_factor01_scale', 1.0)
+        factor2_scale = options.get('custom_sales_factor02_scale', 1.0)
+        factor3_scale = options.get('custom_sales_factor03_scale', 1.0)
 
-        st.progress(30, text="2/5: 할인율 변환 중...")
+        st.progress(30, text="2/5: SALES_FACTOR1 변환 중...")
 
-        # SALES_FACTOR01: 할인율 변환
-        if 'SALES_FACTOR01' in df_transformed.columns:
-            df_transformed['SALES_FACTOR01'] = (
-                df['SALES_FACTOR01'] * factor01_scale
+        # SALES_FACTOR1 변환
+        if 'SALES_FACTOR1' in df_transformed.columns:
+            df_transformed['SALES_FACTOR1'] = (
+                df['SALES_FACTOR1'] * factor1_scale
             )
-            # 할인율 범위: 0.5 ~ 1.5
-            df_transformed['SALES_FACTOR01'] = df_transformed['SALES_FACTOR01'].clip(0.5, 1.5)
+            df_transformed['SALES_FACTOR1'] = df_transformed['SALES_FACTOR1'].clip(0.5, 1.5)
 
-        st.progress(50, text="3/5: 프로모션 변환 중...")
+        st.progress(50, text="3/5: SALES_FACTOR2 변환 중...")
 
-        # SALES_FACTOR02: 프로모션 여부 변환
-        if 'SALES_FACTOR02' in df_transformed.columns:
-            # 확률 기반 프로모션 적용 (0 또는 1)
-            promotion_prob = min(factor02_scale, 1.0)
-            df_transformed['SALES_FACTOR02'] = (
+        # SALES_FACTOR2 변환 (프로모션)
+        if 'SALES_FACTOR2' in df_transformed.columns:
+            promotion_prob = min(factor2_scale, 1.0)
+            df_transformed['SALES_FACTOR2'] = (
                 np.random.choice([0, 1], size=len(df_transformed), p=[1-promotion_prob, promotion_prob])
             )
 
-        st.progress(70, text="4/5: 경쟁사가격 변환 중...")
+        st.progress(70, text="4/5: SALES_FACTOR3 변환 중...")
 
-        # SALES_FACTOR03: 경쟁사 가격 변환
-        if 'SALES_FACTOR03' in df_transformed.columns:
-            df_transformed['SALES_FACTOR03'] = (
-                df['SALES_FACTOR03'] * factor03_scale
+        # SALES_FACTOR3 변환
+        if 'SALES_FACTOR3' in df_transformed.columns:
+            df_transformed['SALES_FACTOR3'] = (
+                df['SALES_FACTOR3'] * factor3_scale
             )
-            # 경쟁사 가격 범위: 0.8 ~ 1.2
-            df_transformed['SALES_FACTOR03'] = df_transformed['SALES_FACTOR03'].clip(0.8, 1.2)
+            df_transformed['SALES_FACTOR3'] = df_transformed['SALES_FACTOR3'].clip(0.8, 1.2)
 
         st.progress(90, text="5/5: 최종 정리 중...")
 
         # 나머지 SALES_FACTOR 유지
-        for col in df.columns:
-            if col.startswith('SALES_FACTOR') and col not in ['SALES_FACTOR01', 'SALES_FACTOR02', 'SALES_FACTOR03']:
+        sales_factor_columns = [col for col in df.columns if col.startswith('SALES_FACTOR')]
+        for col in sales_factor_columns:
+            if col not in ['SALES_FACTOR1', 'SALES_FACTOR2', 'SALES_FACTOR3']:
                 if col in df_transformed.columns:
                     df_transformed[col] = df[col]
 
@@ -215,19 +210,23 @@ def compare_factors(df_original, df_transformed):
     Returns:
         dict: 비교 결과
     """
-    # SALES_FACTOR 또는 FACTOR 컬럼 찾기
-    factor_columns = [col for col in df_original.columns if col.startswith(('FACTOR', 'SALES_FACTOR'))]
+    # FACTOR 또는 SALES_FACTOR 컬럼 찾기
+    factor_columns = [col for col in df_original.columns if col.startswith(('FACTOR', 'SALES_FACTOR')) and col[-1].isdigit()]
 
     comparison = {
         'original': {
             'rows': len(df_original),
-            'factor_means': {col: df_original[col].mean() for col in factor_columns},
-            'factor_stds': {col: df_original[col].std() for col in factor_columns},
+            'factor_means': {col: df_original[col].mean() if pd.api.types.is_numeric_dtype(df_original[col]) else 0
+                           for col in factor_columns},
+            'factor_stds': {col: df_original[col].std() if pd.api.types.is_numeric_dtype(df_original[col]) else 0
+                          for col in factor_columns},
         },
         'transformed': {
             'rows': len(df_transformed),
-            'factor_means': {col: df_transformed[col].mean() for col in factor_columns},
-            'factor_stds': {col: df_transformed[col].std() for col in factor_columns},
+            'factor_means': {col: df_transformed[col].mean() if pd.api.types.is_numeric_dtype(df_transformed[col]) else 0
+                           for col in factor_columns},
+            'factor_stds': {col: df_transformed[col].std() if pd.api.types.is_numeric_dtype(df_transformed[col]) else 0
+                          for col in factor_columns},
         }
     }
 
