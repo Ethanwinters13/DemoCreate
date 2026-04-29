@@ -33,8 +33,8 @@ Thumbs.db
 *.streamlit.app
 
 # Data
-data/*.csv
-!data/.gitkeep
+#data/*.csv
+#!data/.gitkeep
 
 # Cache
 .cache/
