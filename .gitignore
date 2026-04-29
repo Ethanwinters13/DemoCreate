@@ -30,11 +30,6 @@ Thumbs.db
 
 # Streamlit
 .streamlit/
-*.streamlit.app
-
-# Data
-#data/*.csv
-#!data/.gitkeep
 
 # Cache
 .cache/
